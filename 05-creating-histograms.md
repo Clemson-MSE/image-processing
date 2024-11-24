@@ -19,18 +19,18 @@ exercises: 40
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::
 
-In this episode, we will learn how to use skimage functions to create and
+In this episode, we will learn how to use scikit-image functions to create and
 display histograms for images.
 
 ## First, import the packages needed for this episode
 
 ```python
-import numpy as np
-import matplotlib.pyplot as plt
-import ipympl
 import imageio.v3 as iio
-import skimage
-import skimage.draw
+import ipympl
+import matplotlib.pyplot as plt
+import numpy as np
+import skimage as ski
+
 %matplotlib widget
 ```
 
@@ -61,11 +61,11 @@ Here we load the image in grayscale instead of full colour, and display it:
 plant_seedling = iio.imread(uri="data/plant-seedling.jpg", mode="L")
 
 # convert the image to float dtype with a value range from 0 to 1
-plant_seedling = skimage.util.img_as_float(plant_seedling)
+plant_seedling = ski.util.img_as_float(plant_seedling)
 
 # display the image
 fig, ax = plt.subplots()
-plt.imshow(plant_seedling, cmap="gray")
+ax.imshow(plant_seedling, cmap="gray")
 ```
 
 ![](fig/plant-seedling-grayscale.png){alt='Plant seedling'}
@@ -73,8 +73,8 @@ plt.imshow(plant_seedling, cmap="gray")
 Again, we use the `iio.imread()` function to load our image.
 Then, we convert the grayscale image of integer dtype, with 0-255 range, into
 a floating-point one with 0-1 range, by calling the function
-`skimage.util.img_as_float`.
-We will keep working with images in the value range 0 to 1 in this lesson.
+`ski.util.img_as_float`. We can also calculate histograms for 8 bit images as we will see in the
+subsequent exercises.
 
 We now use the function `np.histogram` to compute the histogram of our image
 which, after all, is a NumPy array:
@@ -90,7 +90,7 @@ the 256 possible values in the grayscale image.
 
 The parameter `range` is the range of values each of the pixels in the image can have.
 Here, we pass 0 and 1,
-which is the value range of our input image after transforming it to grayscale.
+which is the value range of our input image after conversion to floating-point.
 
 The first output of the `np.histogram` function is a one-dimensional NumPy array,
 with 256 rows and one column,
@@ -108,32 +108,32 @@ For the last bin, the array also has to contain the stop,
 so it has one more element, than the histogram.
 
 Next, we turn our attention to displaying the histogram,
-by taking advantage of the plotting facilities of the `matplotlib` library.
+by taking advantage of the plotting facilities of the Matplotlib library.
 
 ```python
 # configure and draw the histogram figure
-plt.figure()
-plt.title("Grayscale Histogram")
-plt.xlabel("grayscale value")
-plt.ylabel("pixel count")
-plt.xlim([0.0, 1.0])  # <- named arguments do not work here
+fig, ax = plt.subplots()
+ax.set_title("Grayscale Histogram")
+ax.set_xlabel("grayscale value")
+ax.set_ylabel("pixel count")
+ax.set_xlim([0.0, 1.0])  # <- named arguments do not work here
 
-plt.plot(bin_edges[0:-1], histogram)  # <- or here
+ax.plot(bin_edges[0:-1], histogram)  # <- or here
 ```
 
-We create the plot with `plt.figure()`,
-then label the figure and the coordinate axes with `plt.title()`,
-`plt.xlabel()`, and `plt.ylabel()` functions.
+We create the plot with `plt.subplots()`,
+then label the figure and the coordinate axes with `ax.set_title()`,
+`ax.set_xlabel()`, and `ax.set_ylabel()` functions.
 The last step in the preparation of the figure is to
 set the limits on the values on the x-axis with
-the `plt.xlim([0.0, 1.0])` function call.
+the `ax.set_xlim([0.0, 1.0])` function call.
 
 :::::::::::::::::::::::::::::::::::::::::  callout
 
 ## Variable-length argument lists
 
 Note that we cannot used named parameters for the
-`plt.xlim()` or `plt.plot()` functions.
+`ax.set_xlim()` or `ax.plot()` functions.
 This is because these functions are defined to take an arbitrary number of
 *unnamed* arguments.
 The designers wrote the functions this way because they are very versatile,
@@ -144,7 +144,7 @@ would be complicated.
 ::::::::::::::::::::::::::::::::::::::::::::::::::
 
 Finally, we create the histogram plot itself with
-`plt.plot(bin_edges[0:-1], histogram)`.
+`ax.plot(bin_edges[0:-1], histogram)`.
 We use the **left** bin edges as x-positions for the histogram values by
 indexing the `bin_edges` array to ignore the last value
 (the **right** edge of the last bin).
@@ -155,19 +155,19 @@ it produces this histogram:
 
 :::::::::::::::::::::::::::::::::::::::::  callout
 
-## Histograms in matplotlib
+## Histograms in Matplotlib
 
 Matplotlib provides a dedicated function to compute and display histograms:
-`plt.hist()`.
+`ax.hist()`.
 We will not use it in this lesson in order to understand how to
 calculate histograms in more detail.
 In practice, it is a good idea to use this function,
-because it visualises histograms more appropriately than `plt.plot()`.
+because it visualises histograms more appropriately than `ax.plot()`.
 Here, you could use it by calling
-`plt.hist(image.flatten(), bins=256, range=(0, 1))`
+`ax.hist(image.flatten(), bins=256, range=(0, 1))`
 instead of
-`np.histogram()` and `plt.plot()`
-(`*.flatten()` is a numpy function that converts our two-dimensional
+`np.histogram()` and `ax.plot()`
+(`*.flatten()` is a NumPy function that converts our two-dimensional
 image into a one-dimensional array).
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -201,30 +201,33 @@ it to the `np.histogram` function.
 # read the image as grayscale from the outset
 plant_seedling = iio.imread(uri="data/plant-seedling.jpg", mode="L")
 
+# convert the image to float dtype with a value range from 0 to 1
+plant_seedling = ski.util.img_as_float(plant_seedling)
+
 # display the image
 fig, ax = plt.subplots()
-plt.imshow(plant_seedling, cmap="gray")
+ax.imshow(plant_seedling, cmap="gray")
 
-# create mask here, using np.zeros() and skimage.draw.rectangle()
+# create mask here, using np.zeros() and ski.draw.rectangle()
 mask = np.zeros(shape=plant_seedling.shape, dtype="bool")
-rr, cc = skimage.draw.rectangle(start=(199, 410), end=(384, 485))
+rr, cc = ski.draw.rectangle(start=(199, 410), end=(384, 485))
 mask[rr, cc] = True
 
 # display the mask
 fig, ax = plt.subplots()
-plt.imshow(mask, cmap="gray")
+ax.imshow(mask, cmap="gray")
 
 # mask the image and create the new histogram
 histogram, bin_edges = np.histogram(plant_seedling[mask], bins=256, range=(0.0, 1.0))
 
 # configure and draw the histogram figure
-plt.figure()
+fig, ax = plt.subplots()
 
-plt.title("Grayscale Histogram")
-plt.xlabel("grayscale value")
-plt.ylabel("pixel count")
-plt.xlim([0.0, 1.0])
-plt.plot(bin_edges[0:-1], histogram)
+ax.set_title("Grayscale Histogram")
+ax.set_xlabel("grayscale value")
+ax.set_ylabel("pixel count")
+ax.set_xlim([0.0, 1.0])
+ax.plot(bin_edges[0:-1], histogram)
 
 ```
 
@@ -251,7 +254,7 @@ plant_seedling = iio.imread(uri="data/plant-seedling.jpg")
 
 # display the image
 fig, ax = plt.subplots()
-plt.imshow(plant_seedling)
+ax.imshow(plant_seedling)
 ```
 
 We read the original image, now in full colour, and display it.
@@ -268,17 +271,17 @@ colors = ("red", "green", "blue")
 
 # create the histogram plot, with three lines, one for
 # each color
-plt.figure()
-plt.xlim([0, 256])
+fig, ax = plt.subplots()
+ax.set_xlim([0, 256])
 for channel_id, color in enumerate(colors):
     histogram, bin_edges = np.histogram(
         plant_seedling[:, :, channel_id], bins=256, range=(0, 256)
     )
-    plt.plot(bin_edges[0:-1], histogram, color=color)
+    ax.plot(bin_edges[0:-1], histogram, color=color)
 
-plt.title("Color Histogram")
-plt.xlabel("Color value")
-plt.ylabel("Pixel count")
+ax.set_title("Color Histogram")
+ax.set_xlabel("Color value")
+ax.set_ylabel("Pixel count")
 ```
 
 We will draw the histogram line for each channel in a different colour,
@@ -287,7 +290,7 @@ and so we create a tuple of the colours to use for the three lines with the
 `colors = ("red", "green", "blue")`
 
 line of code.
-Then, we limit the range of the x-axis with the `plt.xlim()` function call.
+Then, we limit the range of the x-axis with the `ax.set_xlim()` function call.
 
 Next, we use the `for` control structure to iterate through the three channels,
 plotting an appropriately-coloured histogram line for each.
@@ -348,10 +351,10 @@ with the
 function call,
 and then add a histogram line of the correct colour to the plot with the
 
-`plt.plot(bin_edges[0:-1], histogram, color=c)`
+`ax.plot(bin_edges[0:-1], histogram, color=color)`
 
 function call.
-Note the use of our loop variables, `channel_id` and `c`.
+Note the use of our loop variables, `channel_id` and `color`.
 
 Finally we label our axes and display the histogram, shown here:
 
@@ -373,7 +376,7 @@ wellplate = iio.imread(uri="data/wellplate-02.tif")
 
 # display the image
 fig, ax = plt.subplots()
-plt.imshow(wellplate)
+ax.imshow(wellplate)
 ```
 
 ![](fig/wellplate-02.jpg){alt='Well plate image'}
@@ -403,27 +406,27 @@ And, the program should produce a colour histogram that looks like this:
 ```python
 # create a circular mask to select the 7th well in the first row
 mask = np.zeros(shape=wellplate.shape[0:2], dtype="bool")
-circle = skimage.draw.disk(center=(240, 1053), radius=49, shape=wellplate.shape[0:2])
+circle = ski.draw.disk(center=(240, 1053), radius=49, shape=wellplate.shape[0:2])
 mask[circle] = 1
 
 # just for display:
 # make a copy of the image, call it masked_image, and
-# use np.logical_not() and indexing to apply the mask to it
-masked_img = wellplate[:]
-masked_img[np.logical_not(mask)] = 0
+# zero values where mask is False
+masked_img = np.array(wellplate)
+masked_img[~mask] = 0
 
 # create a new figure and display masked_img, to verify the
 # validity of your mask
 fig, ax = plt.subplots()
-plt.imshow(masked_img)
+ax.imshow(masked_img)
 
 # list to select colors of each channel line
 colors = ("red", "green", "blue")
 
 # create the histogram plot, with three lines, one for
 # each color
-plt.figure()
-plt.xlim([0, 256])
+fig, ax = plt.subplots()
+ax.set_xlim([0, 256])
 for (channel_id, color) in enumerate(colors):
     # use your circular mask to apply the histogram
     # operation to the 7th well of the first row
@@ -431,10 +434,10 @@ for (channel_id, color) in enumerate(colors):
         wellplate[:, :, channel_id][mask], bins=256, range=(0, 256)
     )
 
-    plt.plot(histogram, color=color)
+    ax.plot(histogram, color=color)
 
-plt.xlabel("color value")
-plt.ylabel("pixel count")
+ax.set_xlabel("color value")
+ax.set_ylabel("pixel count")
 
 ```
 
@@ -446,9 +449,8 @@ plt.ylabel("pixel count")
 
 - In many cases, we can load images in grayscale by passing the `mode="L"` argument to the `iio.imread()` function.
 - We can create histograms of images with the `np.histogram` function.
-- We can separate the RGB channels of an image using slicing operations.
-- We can display histograms using the `matplotlib pyplot` `figure()`, `title()`, `xlabel()`, `ylabel()`, `xlim()`, `plot()`, and `show()` functions.
+- We can display histograms using `ax.plot()` with the `bin_edges` and `histogram` values returned by `np.histogram()`.
+- The plot can be customised using `ax.set_xlabel()`, `ax.set_ylabel()`, `ax.set_xlim()`, `ax.set_ylim()`, and `ax.set_title()`.
+- We can separate the colour channels of an RGB image using slicing operations and create histograms for each colour channel separately.
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
